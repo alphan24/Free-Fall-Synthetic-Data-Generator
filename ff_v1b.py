@@ -138,7 +138,6 @@ def generate_data_no_friction(g, filename, h_initial, h_final,
     except Exception as e:
         print(f" Unexpected error while writing '{filename}': {e}")
 
-
 # ---------------------------------------------------------------------
 # GRAPH PLOTTING
 # ---------------------------------------------------------------------
