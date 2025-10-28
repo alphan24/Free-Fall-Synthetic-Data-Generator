@@ -9,7 +9,6 @@ import os
 # CONSTANTS
 # ---------------------------------------------------------------------
 DATA_FILE = "data.dat"
-AIR_DATA = "air.dat"
 DEFAULT_G = 9.8069
 DEFAULT_M = 0.005
 DEFAULT_K = 0.0001
@@ -18,72 +17,42 @@ AIR = [DEFAULT_M, DEFAULT_K]
 # ---------------------------------------------------------------------
 # Air Friction Calculation
 # ---------------------------------------------------------------------
-def calculate_k(rho,Cd,r):
-    A = math.pi*r*r
-    k = 0.5*rho*Cd*A
-    return k
+def calculate_k(rho, Cd, r):
+    A = math.pi * r * r
+    return 0.5 * rho * Cd * A
+
 # ---------------------------------------------------------------------
-# FILE I/O: Persistent Value Handling
+# UNIVERSAL FILE I/O HANDLER
 # ---------------------------------------------------------------------
-def read_g_value():
-    """Reads the local g value from data.dat file safely."""
-    try:
-        if not os.path.exists(DATA_FILE):
-            print(f"No data file found. Using default g = {DEFAULT_G:.4f} m/s².")
-            write_g_value(DEFAULT_G)
-            return DEFAULT_G
-
-        with open(DATA_FILE, 'r') as file:
-            value = float(file.readline().strip())
-            print(f"Loaded local g = {value:.4f} m/s² from {DATA_FILE}.")
-            return value
-    except (ValueError, OSError) as e:
-        print(f"Error reading {DATA_FILE}: {e}. Using default g = {DEFAULT_G:.4f} m/s².")
-        return DEFAULT_G
-
-def read_air_value():
-    """Reads the m value from air.dat file safely."""
-    try:
-        if not os.path.exists(AIR_DATA):
-            print(f"No data file found. Using default m = {DEFAULT_M:.3f} kg and k = {DEFAULT_K:.5f} Ns/m.")
-            write_air_value(DEFAULT_M,DEFAULT_K)
-            return [DEFAULT_M,DEFAULT_K] 
-
-        with open(AIR_DATA, 'r') as file:
-            AIR[0] = float(file.readline().strip())
-            AIR[1] = float(file.readline().strip())
-            print(f"Loaded m = {AIR[0]:.3f} kg and  k = {AIR[1]:.5f} Ns/m  from {AIR_DATA}.")
-            return AIR
-    except (ValueError, OSError) as e:
-        print(f"Error reading {AIR_DATA}: {e}. Using default m = {DEFAULT_M:.3f} kg and k = {DEFAULT_K:.5f} Ns/m.")
-        return [DEFAULT_M,DEFAULT_K] 
+def handle_file_io(mode, default_values=None, write_values=None):
     
-def write_air_value(m,k):
-    """Writes the local g value to data.dat file safely."""
+##    Reads or writes g, m, k values to/from a single file: data.dat
+   
     try:
-        with open(AIR_DATA, 'w') as file:
-            file.write(f"{m}\n")
-            file.write(f"{k}\n")
-        print(f"\nm value ({m:.3f} Kg) and k value ({k:.5f} Ns/m) saved to {AIR_DATA}.\n")
-    except PermissionError:
-        print(f"Permission denied while saving to {AIR_DATA}. Please close the file.")
-    except OSError as e:
-        print(f"File system error while writing to {AIR_DATA}: {e}")
-    except Exception as e:
-        print(f"Unexpected error writing {AIR_DATA}: {e}")
+        if mode == 'read':
+            if not os.path.exists(DATA_FILE):
+                print(f"No data file found. Using defaults: g={DEFAULT_G}, m={DEFAULT_M}, k={DEFAULT_K}")
+                handle_file_io('write', write_values=default_values)
+                return default_values
 
-def write_g_value(g):
-    """Writes the local g value to data.dat file safely."""
-    try:
-        with open(DATA_FILE, 'w') as file:
-            file.write(f"{g}\n")
-        print(f"\nLocal g value ({g:.4f} m/s²) saved to {DATA_FILE}.\n")
-    except PermissionError:
-        print(f"Permission denied while saving to {DATA_FILE}. Please close the file.")
-    except OSError as e:
-        print(f"File system error while writing to {DATA_FILE}: {e}")
+            with open(DATA_FILE, 'r') as file:
+                lines = file.readlines()
+                if len(lines) < 3:
+                    raise ValueError("data.dat is malformed or missing values.")
+                g = float(lines[0].strip())
+                m = float(lines[1].strip())
+                k = float(lines[2].strip())
+                print(f"Loaded values from {DATA_FILE}: g={g:.4f}, m={m:.3f}, k={k:.5f}")
+                return [g, m, k]
+
+        elif mode == 'write':
+            with open(DATA_FILE, 'w') as file:
+                for val in write_values:
+                    file.write(f"{val}\n")
+            print(f"Values saved to {DATA_FILE}: g={write_values[0]:.4f}, m={write_values[1]:.3f}, k={write_values[2]:.5f}")
     except Exception as e:
-        print(f"Unexpected error writing {DATA_FILE}: {e}")
+        print(f"File error on {DATA_FILE}: {e}")
+        return default_values if mode == 'read' else None
 
 # ---------------------------------------------------------------------
 # MAIN MENU DISPLAY
@@ -105,7 +74,6 @@ def display_menu(g):
 # INPUT HANDLER
 # ---------------------------------------------------------------------
 def get_float_input(prompt, convert_cm_to_m=False):
-    """Safely get a float input from the user."""
     try:
         value = float(input(prompt))
         return value / 100 if convert_cm_to_m else value
@@ -118,7 +86,6 @@ def get_float_input(prompt, convert_cm_to_m=False):
 # ---------------------------------------------------------------------
 def generate_data_no_friction(g, filename, h_initial, h_final,
                               h_increment, n_trials, h_noise_level, t_noise_level):
-    """Generates synthetic free fall data (no air friction) and saves to CSV."""
     try:
         with open(filename, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
@@ -126,7 +93,6 @@ def generate_data_no_friction(g, filename, h_initial, h_final,
 
             h_current = h_initial
             while h_current <= h_final:
-                # Apply height noise ONCE per height
                 h_with_noise = h_current + np.random.normal(0, h_noise_level)
 
                 for _ in range(n_trials):
@@ -142,13 +108,12 @@ def generate_data_no_friction(g, filename, h_initial, h_final,
     except PermissionError:
         print(f"Permission denied when writing '{filename}'. Please close the file.")
     except OSError as e:
-        print(f" File system error while writing '{filename}': {e}")
+        print(f"File system error while writing '{filename}': {e}")
     except Exception as e:
         print(f"Unexpected error while writing '{filename}': {e}")
 
 def generate_data_with_friction(g, m, k, filename, h_initial, h_final,
                                 h_increment, n_trials, h_noise_level, t_noise_level):
-    """Generates synthetic free fall data (with air friction) and saves to CSV."""
     try:
         with open(filename, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
@@ -156,14 +121,13 @@ def generate_data_with_friction(g, m, k, filename, h_initial, h_final,
 
             h_current = h_initial
             while h_current <= h_final:
-                # Apply height noise ONCE per height
                 h_with_noise = h_current + np.random.normal(0, h_noise_level)
 
                 for _ in range(n_trials):
                     try:
                         tf = math.sqrt(m / (g * k)) * math.acosh(math.exp(k * max(h_with_noise, 0) / m))
                     except ValueError:
-                        tf = math.nan  # Invalid value (example: too large e^x)
+                        tf = math.nan
 
                     t_measured = tf + np.random.normal(0, t_noise_level)
                     writer.writerow([h_current, t_measured, t_measured ** 2])
@@ -184,7 +148,6 @@ def generate_data_with_friction(g, m, k, filename, h_initial, h_final,
 # GRAPH PLOTTING
 # ---------------------------------------------------------------------
 def draw_graph(filename):
-    """Plots Height vs Time² with a linear regression line."""
     try:
         if not os.path.exists(filename):
             print(f"File '{filename}' not found for plotting.")
@@ -219,29 +182,18 @@ def draw_graph(filename):
         print(f"Graph saved as '{plot_name}'.")
         print(f"Linear Fit: h = {a:.4f}·t² + {b:.5f}\n")
     except pd.errors.EmptyDataError:
-        print(f"️ '{filename}' is empty or corrupted.")
+        print(f"️'{filename}' is empty or corrupted.")
     except Exception as e:
-        print(f" Error while plotting '{filename}': {e}")    
+        print(f"Error while plotting '{filename}': {e}")
 
 # ---------------------------------------------------------------------
 # EXPERIMENT MODES
 # ---------------------------------------------------------------------
-def run_experiment(mode, g, m=None, k=None):   
-##    Runs a free-fall experiment based on the selected mode.
-##    
-##    Modes:
-##        'single_no_friction'       - Single student, no air friction
-##        'single_with_friction'     - Single student, with air friction
-##        'multi_no_friction'        - Multiple students, no air friction
-##        'multi_with_friction'      - Multiple students, with air friction
- 
+def run_experiment(mode, g, m=None, k=None):
     is_multi = mode.startswith("multi")
     has_friction = "with_friction" in mode
 
-    if is_multi:
-        num_students = int(get_float_input("Enter number of students: "))
-    else:
-        num_students = 1
+    num_students = int(get_float_input("Enter number of students: ")) if is_multi else 1
 
     h_initial = get_float_input("Enter initial height (cm): ", True)
     h_final = get_float_input("Enter final height (cm): ", True)
@@ -263,9 +215,8 @@ def run_experiment(mode, g, m=None, k=None):
 
     for i in range(1, num_students + 1):
         filename = f"student_{i}_free_fall.csv" if is_multi else "synthetic_free_fall_data.csv"
-
         if is_multi:
-            print(f"\n Generating data for Student {i}...")
+            print(f"\nGenerating data for Student {i}...")
 
         if has_friction:
             if m is None or k is None:
@@ -275,38 +226,41 @@ def run_experiment(mode, g, m=None, k=None):
         else:
             generate_data_no_friction(g, filename, h_initial, h_final,
                                       h_increment, n_trials, h_noise_level, t_noise_level)
-            
+
 # ---------------------------------------------------------------------
 # MAIN PROGRAM
 # ---------------------------------------------------------------------
 def main():
     while True:
-        g = read_g_value()
-        AIR = read_air_value()
+        g, AIR[0], AIR[1] = handle_file_io('read', default_values=[DEFAULT_G, DEFAULT_M, DEFAULT_K])
         display_menu(g)
         choice = input("Enter your choice: ").strip()
 
         match choice:
             case "1":
                 g = get_float_input("Enter new local g value (m/s²): ")
-                write_g_value(g)
+                handle_file_io('write', write_values=[g, AIR[0], AIR[1]])
             case "2":
                 run_experiment("single_no_friction", g)
             case "3":
-                run_experiment("single_with_friction", g,AIR[0],AIR[1])
+                run_experiment("single_with_friction", g, AIR[0], AIR[1])
             case "4":
                 run_experiment("multi_no_friction", g)
             case "5":
-                run_experiment("multi_with_friction", g,AIR[0],AIR[1])
+                run_experiment("multi_with_friction", g, AIR[0], AIR[1])
             case "6":
                 m = get_float_input("Enter new m value (kg): ")
-                k = get_float_input("Enter new k value (Ns/m): ")
-                write_air_value(m,k)
+                rho = get_float_input("Enter new rho value (kg/m³): ")
+                Cd = get_float_input("Enter new Drag coefficient value (Cd): ")
+                r = get_float_input("Enter new radius value (m): ")
+                k = calculate_k(rho, Cd, r)
+                AIR[0], AIR[1] = m, k
+                handle_file_io('write', write_values=[g, m, k])
             case "7":
                 print("Goodbye!")
                 break
             case _:
                 print("Invalid option. Please try again.")
-                
+
 if __name__ == "__main__":
     main()
