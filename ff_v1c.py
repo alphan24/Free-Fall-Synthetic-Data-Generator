@@ -275,7 +275,7 @@ def run_experiment(mode, g, m=None, k=None):
         else:
             generate_data_no_friction(g, filename, h_initial, h_final,
                                       h_increment, n_trials, h_noise_level, t_noise_level)
-
+            
 # ---------------------------------------------------------------------
 # MAIN PROGRAM
 # ---------------------------------------------------------------------
