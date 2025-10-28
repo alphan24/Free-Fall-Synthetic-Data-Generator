@@ -9,9 +9,10 @@ import os
 # CONSTANTS
 # ---------------------------------------------------------------------
 DATA_FILE = "data.dat"
+AIR_DATA = "air.dat"
 DEFAULT_G = 9.8069
-DEFAULT_M = 0
-DEFAULT_K = 0
+DEFAULT_M = 0.005
+DEFAULT_K = 0.47
 
 # ---------------------------------------------------------------------
 # FILE I/O: Persistent g Handling
@@ -32,6 +33,37 @@ def read_g_value():
         print(f" Error reading {DATA_FILE}: {e}. Using default g = {DEFAULT_G:.4f} m/s².")
         return DEFAULT_G
 
+##def read_air_value():
+##    """Reads the local g value from data.dat file safely."""
+##    try:
+##        if not os.path.exists(AIR_DATA):
+##            print(f"️ No data file found. Using default g = {DEFAULT_G:.4f} m/s².")
+##            write_g_value(DEFAULT_G)
+##            return DEFAULT_G
+##
+##        with open(DATA_FILE, 'r') as file:
+##            value = float(file.readline().strip())
+##            print(f" Loaded local g = {value:.4f} m/s² from {AIR_DATA}.")
+##            return value
+##    except (ValueError, OSError) as e:
+##        print(f" Error reading {AIR_DATA}: {e}. Using default g = {DEFAULT_G:.4f} m/s².")
+##        return DEFAULT_G
+    
+def write_air_value(m,k):
+    """Writes the local g value to data.dat file safely."""
+    try:
+        with open(AIR_DATA, 'w') as file:
+            file.write(f"{m}\n")
+            file.write(f"{k}\n")
+        print(f" Local m value ({m:.4f} Kg) saved to {AIR_DATA}.")
+        print(f" Local k value ({k:.4f} Ns/m) saved to {AIR_DATA}.")
+    except PermissionError:
+        print(f" Permission denied while saving to {AIR_DATA}. Please close the file.")
+    except OSError as e:
+        print(f" File system error while writing to {AIR_DATA}: {e}")
+    except Exception as e:
+        print(f"️ Unexpected error writing {AIR_DATA}: {e}")
+
 def write_g_value(g):
     """Writes the local g value to data.dat file safely."""
     try:
@@ -44,7 +76,6 @@ def write_g_value(g):
         print(f" File system error while writing to {DATA_FILE}: {e}")
     except Exception as e:
         print(f"️ Unexpected error writing {DATA_FILE}: {e}")
-
 
 # ---------------------------------------------------------------------
 # MAIN MENU DISPLAY
@@ -59,7 +90,7 @@ def display_menu(g):
     print("3 - Single Student Data with air friction")
     print("4 - Multiple Students Data (No air friction)")
     print("5 - Multiple Students Data with air friction")
-    print("6 - Object parameters for air friction")
+    print("6 - Change object parameters for air friction")
     print("7 - Exit\n")
 
 # ---------------------------------------------------------------------
@@ -229,8 +260,12 @@ def main():
                 print(" Feature to be implemented...")
             case "4":
                 multiple_students_experiment(g)
-            case "5" | "6":
+            case "5":
                 print(" Feature to be implemented...")
+            case "6":
+                m = get_float_input("Enter new m value (kg): ")
+                k = get_float_input("Enter new k value (Ns/m): ")
+                write_air_value(m,k)
             case "7":
                 print("Goodbye!")
                 break
