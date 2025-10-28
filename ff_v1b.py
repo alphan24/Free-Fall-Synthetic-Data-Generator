@@ -260,9 +260,9 @@ def multiple_students_experiment(g):
 # MAIN PROGRAM
 # ---------------------------------------------------------------------
 def main():
-    g = read_g_value()
-    AIR[0] = read_m_value()
     while True:
+        g = read_g_value()
+        AIR[0] = read_m_value()
         display_menu(g)
         choice = input("Enter your choice: ").strip()
 
