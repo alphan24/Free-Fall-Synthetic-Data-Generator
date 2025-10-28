@@ -179,8 +179,7 @@ def draw_graph(filename):
     except pd.errors.EmptyDataError:
         print(f"️ '{filename}' is empty or corrupted.")
     except Exception as e:
-        print(f" Error while plotting '{filename}': {e}")
-    
+        print(f" Error while plotting '{filename}': {e}")    
 
 # ---------------------------------------------------------------------
 # EXPERIMENT MODES
