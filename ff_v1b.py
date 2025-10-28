@@ -34,37 +34,23 @@ def read_g_value():
         print(f" Error reading {DATA_FILE}: {e}. Using default g = {DEFAULT_G:.4f} m/s².")
         return DEFAULT_G
 
-def read_m_value():
+def read_air_value():
     """Reads the m value from air.dat file safely."""
     try:
         if not os.path.exists(AIR_DATA):
-            print(f"️ No data file found. Using default m = {DEFAULT_M:.3f} kg.")
-            return DEFAULT_M 
+            print(f"️ No data file found. Using default m = {DEFAULT_M:.3f} kg and k = {DEFAULT_K:.3f} Ns/m.")
+            write_air_value(DEFAULT_M,DEFAULT_K)
+            return [DEFAULT_M,DEFAULT_K] 
 
         with open(AIR_DATA, 'r') as file:
-            value = float(file.readline().strip())
-            print(f" Loaded m = {value:.3f} kg from {AIR_DATA}.")
-            return value
+            AIR[0] = float(file.readline().strip())
+            AIR[1] = float(file.readline().strip())
+            print(f" Loaded m = {AIR[0]:.3f} kg and  k = {AIR[1]:.3f} Ns/m  from {AIR_DATA}.")
+            return AIR
     except (ValueError, OSError) as e:
-        print(f" Error reading {AIR_DATA}: {e}. Using default m = {DEFAULT_M:.3f} kg.")
-        return DEFAULT_M 
-
-##def read_k_value():
-##    """Reads the local g value from data.dat file safely."""
-##    try:
-##        if not os.path.exists(AIR_DATA):
-##            print(f"️ No data file found. Using default g = {DEFAULT_G:.4f} m/s².")
-##            write_g_value(DEFAULT_G)
-##            return DEFAULT_K 
-##
-##        with open(DATA_FILE, 'r') as file:
-##            value = float(file.readline().strip())
-##            print(f" Loaded local g = {value:.4f} m/s² from {AIR_DATA}.")
-##            return value
-##    except (ValueError, OSError) as e:
-##        print(f" Error reading {AIR_DATA}: {e}. Using default g = {DEFAULT_G:.4f} m/s².")
-##        return DEFAULT_K 
-##    
+        print(f" Error reading {AIR_DATA}: {e}. Using default m = {DEFAULT_M:.3f} kg and k = {DEFAULT_K:.3f} Ns/m.")
+        return [DEFAULT_M,DEFAULT_K] 
+    
 def write_air_value(m,k):
     """Writes the local g value to data.dat file safely."""
     try:
@@ -99,9 +85,7 @@ def write_g_value(g):
 def display_menu(g):
     print("\n" + "*" * 80)
     print("Welcome to Synthetic Free Fall Data Generator")
-    print(f"Current Local g value: {g:.4f} m/s²")
-    print(f"Current m value: {AIR[0]:.3f} kg")
-    print(f"Current k value: {AIR[1]:.3f} Ns/m")
+    print(f"Current Local values - g: {g:.4f} m/s², m: {AIR[0]:.3f} kg, k: {AIR[1]:.3f} Ns/m")
     print("*" * 80)
     print("1 - Change local g value")
     print("2 - Single Student Data (No air friction)")
@@ -262,7 +246,7 @@ def multiple_students_experiment(g):
 def main():
     while True:
         g = read_g_value()
-        AIR[0] = read_m_value()
+        AIR = read_air_value()
         display_menu(g)
         choice = input("Enter your choice: ").strip()
 
