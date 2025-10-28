@@ -85,7 +85,7 @@ def display_menu(g):
     print("\n" + "*" * 80)
     print("Welcome to Synthetic Free Fall Data Generator")
     print(f"Current Local values - g: {g:.4f} m/s², m: {AIR[0]:.3f} kg, k: {AIR[1]:.3f} Ns/m")
-    print("*" * 80)
+    print("*" * 80 + "\n")
     print("1 - Change local g value")
     print("2 - Single Student Data (No air friction)")
     print("3 - Single Student Data with air friction")
