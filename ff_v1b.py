@@ -12,11 +12,11 @@ DATA_FILE = "data.dat"
 AIR_DATA = "air.dat"
 DEFAULT_G = 9.8069
 DEFAULT_M = 0.005
-DEFAULT_K = 0.47
+DEFAULT_K = 0.0001
 AIR = [DEFAULT_M, DEFAULT_K]
 
 # ---------------------------------------------------------------------
-# FILE I/O: Persistent g Handling
+# FILE I/O: Persistent Value Handling
 # ---------------------------------------------------------------------
 def read_g_value():
     """Reads the local g value from data.dat file safely."""
@@ -38,17 +38,17 @@ def read_air_value():
     """Reads the m value from air.dat file safely."""
     try:
         if not os.path.exists(AIR_DATA):
-            print(f"No data file found. Using default m = {DEFAULT_M:.3f} kg and k = {DEFAULT_K:.3f} Ns/m.")
+            print(f"No data file found. Using default m = {DEFAULT_M:.3f} kg and k = {DEFAULT_K:.5f} Ns/m.")
             write_air_value(DEFAULT_M,DEFAULT_K)
             return [DEFAULT_M,DEFAULT_K] 
 
         with open(AIR_DATA, 'r') as file:
             AIR[0] = float(file.readline().strip())
             AIR[1] = float(file.readline().strip())
-            print(f"Loaded m = {AIR[0]:.3f} kg and  k = {AIR[1]:.3f} Ns/m  from {AIR_DATA}.")
+            print(f"Loaded m = {AIR[0]:.3f} kg and  k = {AIR[1]:.5f} Ns/m  from {AIR_DATA}.")
             return AIR
     except (ValueError, OSError) as e:
-        print(f"Error reading {AIR_DATA}: {e}. Using default m = {DEFAULT_M:.3f} kg and k = {DEFAULT_K:.3f} Ns/m.")
+        print(f"Error reading {AIR_DATA}: {e}. Using default m = {DEFAULT_M:.3f} kg and k = {DEFAULT_K:.5f} Ns/m.")
         return [DEFAULT_M,DEFAULT_K] 
     
 def write_air_value(m,k):
@@ -57,7 +57,7 @@ def write_air_value(m,k):
         with open(AIR_DATA, 'w') as file:
             file.write(f"{m}\n")
             file.write(f"{k}\n")
-        print(f"\nm value ({m:.3f} Kg) and k value ({k:.3f} Ns/m) saved to {AIR_DATA}.\n")
+        print(f"\nm value ({m:.3f} Kg) and k value ({k:.5f} Ns/m) saved to {AIR_DATA}.\n")
     except PermissionError:
         print(f"Permission denied while saving to {AIR_DATA}. Please close the file.")
     except OSError as e:
@@ -84,7 +84,7 @@ def write_g_value(g):
 def display_menu(g):
     print("\n" + "*" * 80)
     print("Welcome to Synthetic Free Fall Data Generator")
-    print(f"Current Local values - g: {g:.4f} m/s², m: {AIR[0]:.3f} kg, k: {AIR[1]:.3f} Ns/m")
+    print(f"Current Local values - g: {g:.4f} m/s², m: {AIR[0]:.3f} kg, k: {AIR[1]:.5f} Ns/m")
     print("*" * 80 + "\n")
     print("1 - Change local g value")
     print("2 - Single Student Data (No air friction)")
@@ -139,6 +139,40 @@ def generate_data_no_friction(g, filename, h_initial, h_final,
     except Exception as e:
         print(f"Unexpected error while writing '{filename}': {e}")
 
+def generate_data_with_friction(g, m, k, filename, h_initial, h_final,
+                                h_increment, n_trials, h_noise_level, t_noise_level):
+    """Generates synthetic free fall data (with air friction) and saves to CSV."""
+    try:
+        with open(filename, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(["Height_m", "Time_s", "Time^2_s2"])
+
+            h_current = h_initial
+            while h_current <= h_final:
+                # Apply height noise ONCE per height
+                h_with_noise = h_current + np.random.normal(0, h_noise_level)
+
+                for _ in range(n_trials):
+                    try:
+                        tf = math.sqrt(m / (g * k)) * math.acosh(math.exp(k * max(h_with_noise, 0) / m))
+                    except ValueError:
+                        tf = math.nan  # Invalid value (example: too large e^x)
+
+                    t_measured = tf + np.random.normal(0, t_noise_level)
+                    writer.writerow([h_current, t_measured, t_measured ** 2])
+
+                h_current += h_increment
+
+        print(f"Data with air friction successfully saved to '{filename}'.")
+        draw_graph(filename)
+
+    except PermissionError:
+        print(f"Permission denied when writing '{filename}'. Please close the file.")
+    except OSError as e:
+        print(f"File system error while writing '{filename}': {e}")
+    except Exception as e:
+        print(f"Unexpected error while writing '{filename}': {e}")
+
 # ---------------------------------------------------------------------
 # GRAPH PLOTTING
 # ---------------------------------------------------------------------
@@ -163,7 +197,7 @@ def draw_graph(filename):
 
         plt.figure(figsize=(7, 5))
         plt.scatter(x, y, color='blue', alpha=0.7, label='Data Points')
-        plt.plot(x, trendline(x), color='red', label=f'Fit: h = {a:.3f}·t² + {b:.3f}')
+        plt.plot(x, trendline(x), color='red', label=f'Fit: h = {a:.3f}·t² + {b:.4f}')
         plt.xlabel("Time² (s²)")
         plt.ylabel("Height (m)")
         plt.title(f"Free Fall: {os.path.basename(filename)}")
@@ -176,7 +210,7 @@ def draw_graph(filename):
         plt.show()
 
         print(f"Graph saved as '{plot_name}'.")
-        print(f"Linear Fit: h = {a:.4f}·t² + {b:.4f}\n")
+        print(f"Linear Fit: h = {a:.4f}·t² + {b:.5f}\n")
     except pd.errors.EmptyDataError:
         print(f"️ '{filename}' is empty or corrupted.")
     except Exception as e:
@@ -185,6 +219,31 @@ def draw_graph(filename):
 # ---------------------------------------------------------------------
 # EXPERIMENT MODES
 # ---------------------------------------------------------------------
+def single_student_experiment_air_friction(g,m,k):
+    """Runs a single-student free-fall experiment."""
+    filename = 'synthetic_free_fall_data.csv'
+
+    h_initial = get_float_input("Enter initial height (cm): ", True)
+    h_final = get_float_input("Enter final height (cm): ", True)
+    h_increment = get_float_input("Enter height increment (cm): ", True)
+    n_trials = int(get_float_input("Enter number of trials: "))
+
+    print("\nSelect noise type:")
+    print("1 - No noise")
+    print("2 - Noise in height")
+    print("3 - Noise in time")
+    print("4 - Noise in height and time")
+    noise_option = input("Enter your choice: ")
+
+    h_noise_level = t_noise_level = 0
+    if noise_option in ("2", "4"):
+        h_noise_level = get_float_input("Enter height noise coefficient: ")
+    if noise_option in ("3", "4"):
+        t_noise_level = get_float_input("Enter time noise coefficient: ")
+
+    generate_data_with_friction(g, m, k, filename, h_initial, h_final,
+                              h_increment, n_trials, h_noise_level, t_noise_level)
+    
 def single_student_experiment(g):
     """Runs a single-student free-fall experiment."""
     filename = 'synthetic_free_fall_data.csv'
@@ -239,6 +298,34 @@ def multiple_students_experiment(g):
         generate_data_no_friction(g, filename, h_initial, h_final,
                                   h_increment, n_trials, h_noise_level, t_noise_level)
 
+def multiple_students_experiment_air_friction(g,m,k):
+    """Runs multiple student free-fall experiments with shared setup."""
+    num_students = int(get_float_input("Enter number of students: "))
+
+    h_initial = get_float_input("Enter initial height (cm): ", True)
+    h_final = get_float_input("Enter final height (cm): ", True)
+    h_increment = get_float_input("Enter height increment (cm): ", True)
+    n_trials = int(get_float_input("Enter number of trials per student: "))
+
+    print("\nSelect noise type:")
+    print("1 - No noise")
+    print("2 - Noise in height")
+    print("3 - Noise in time")
+    print("4 - Noise in height and time")
+    noise_option = input("Enter your choice: ")
+
+    h_noise_level = t_noise_level = 0
+    if noise_option in ("2", "4"):
+        h_noise_level = get_float_input("Enter height noise coefficient: ")
+    if noise_option in ("3", "4"):
+        t_noise_level = get_float_input("Enter time noise coefficient: ")
+
+    for i in range(1, num_students + 1):
+        filename = f"student_{i}_free_fall.csv"
+        print(f"\n Generating data for Student {i}...")
+        generate_data_with_friction(g, m, k, filename, h_initial, h_final,
+                              h_increment, n_trials, h_noise_level, t_noise_level)
+
 # ---------------------------------------------------------------------
 # MAIN PROGRAM
 # ---------------------------------------------------------------------
@@ -256,7 +343,7 @@ def main():
             case "2":
                 single_student_experiment(g)
             case "3":
-                print("\nFeature to be implemented...\n")
+                single_student_experiment_air_friction(g,AIR[0],AIR[1])
             case "4":
                 multiple_students_experiment(g)
             case "5":
