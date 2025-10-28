@@ -11,7 +11,7 @@ import os
 DATA_FILE = "data.dat"
 DEFAULT_G = 9.8069
 DEFAULT_M = 0.005
-DEFAULT_K = 0.0001
+DEFAULT_K = 0.02261
 AIR = [DEFAULT_M, DEFAULT_K]
 
 # ---------------------------------------------------------------------
