@@ -22,33 +22,33 @@ def read_g_value():
     """Reads the local g value from data.dat file safely."""
     try:
         if not os.path.exists(DATA_FILE):
-            print(f"️ No data file found. Using default g = {DEFAULT_G:.4f} m/s².")
+            print(f"No data file found. Using default g = {DEFAULT_G:.4f} m/s².")
             write_g_value(DEFAULT_G)
             return DEFAULT_G
 
         with open(DATA_FILE, 'r') as file:
             value = float(file.readline().strip())
-            print(f" Loaded local g = {value:.4f} m/s² from {DATA_FILE}.")
+            print(f"Loaded local g = {value:.4f} m/s² from {DATA_FILE}.")
             return value
     except (ValueError, OSError) as e:
-        print(f" Error reading {DATA_FILE}: {e}. Using default g = {DEFAULT_G:.4f} m/s².")
+        print(f"Error reading {DATA_FILE}: {e}. Using default g = {DEFAULT_G:.4f} m/s².")
         return DEFAULT_G
 
 def read_air_value():
     """Reads the m value from air.dat file safely."""
     try:
         if not os.path.exists(AIR_DATA):
-            print(f"️ No data file found. Using default m = {DEFAULT_M:.3f} kg and k = {DEFAULT_K:.3f} Ns/m.")
+            print(f"No data file found. Using default m = {DEFAULT_M:.3f} kg and k = {DEFAULT_K:.3f} Ns/m.")
             write_air_value(DEFAULT_M,DEFAULT_K)
             return [DEFAULT_M,DEFAULT_K] 
 
         with open(AIR_DATA, 'r') as file:
             AIR[0] = float(file.readline().strip())
             AIR[1] = float(file.readline().strip())
-            print(f" Loaded m = {AIR[0]:.3f} kg and  k = {AIR[1]:.3f} Ns/m  from {AIR_DATA}.")
+            print(f"Loaded m = {AIR[0]:.3f} kg and  k = {AIR[1]:.3f} Ns/m  from {AIR_DATA}.")
             return AIR
     except (ValueError, OSError) as e:
-        print(f" Error reading {AIR_DATA}: {e}. Using default m = {DEFAULT_M:.3f} kg and k = {DEFAULT_K:.3f} Ns/m.")
+        print(f"Error reading {AIR_DATA}: {e}. Using default m = {DEFAULT_M:.3f} kg and k = {DEFAULT_K:.3f} Ns/m.")
         return [DEFAULT_M,DEFAULT_K] 
     
 def write_air_value(m,k):
@@ -57,27 +57,26 @@ def write_air_value(m,k):
         with open(AIR_DATA, 'w') as file:
             file.write(f"{m}\n")
             file.write(f"{k}\n")
-        print(f" Local m value ({m:.4f} Kg) saved to {AIR_DATA}.")
-        print(f" Local k value ({k:.4f} Ns/m) saved to {AIR_DATA}.")
+        print(f"\nm value ({m:.3f} Kg) and k value ({k:.3f} Ns/m) saved to {AIR_DATA}.\n")
     except PermissionError:
-        print(f" Permission denied while saving to {AIR_DATA}. Please close the file.")
+        print(f"Permission denied while saving to {AIR_DATA}. Please close the file.")
     except OSError as e:
-        print(f" File system error while writing to {AIR_DATA}: {e}")
+        print(f"File system error while writing to {AIR_DATA}: {e}")
     except Exception as e:
-        print(f"️ Unexpected error writing {AIR_DATA}: {e}")
+        print(f"Unexpected error writing {AIR_DATA}: {e}")
 
 def write_g_value(g):
     """Writes the local g value to data.dat file safely."""
     try:
         with open(DATA_FILE, 'w') as file:
             file.write(f"{g}\n")
-        print(f" Local g value ({g:.4f} m/s²) saved to {DATA_FILE}.")
+        print(f"\nLocal g value ({g:.4f} m/s²) saved to {DATA_FILE}.\n")
     except PermissionError:
-        print(f" Permission denied while saving to {DATA_FILE}. Please close the file.")
+        print(f"Permission denied while saving to {DATA_FILE}. Please close the file.")
     except OSError as e:
-        print(f" File system error while writing to {DATA_FILE}: {e}")
+        print(f"File system error while writing to {DATA_FILE}: {e}")
     except Exception as e:
-        print(f"️ Unexpected error writing {DATA_FILE}: {e}")
+        print(f"Unexpected error writing {DATA_FILE}: {e}")
 
 # ---------------------------------------------------------------------
 # MAIN MENU DISPLAY
@@ -130,15 +129,15 @@ def generate_data_no_friction(g, filename, h_initial, h_final,
 
                 h_current += h_increment
 
-        print(f" Data successfully saved to '{filename}'.")
+        print(f"Data successfully saved to '{filename}'.")
         draw_graph(filename)
 
     except PermissionError:
-        print(f" Permission denied when writing '{filename}'. Please close the file.")
+        print(f"Permission denied when writing '{filename}'. Please close the file.")
     except OSError as e:
         print(f" File system error while writing '{filename}': {e}")
     except Exception as e:
-        print(f" Unexpected error while writing '{filename}': {e}")
+        print(f"Unexpected error while writing '{filename}': {e}")
 
 # ---------------------------------------------------------------------
 # GRAPH PLOTTING
@@ -147,12 +146,12 @@ def draw_graph(filename):
     """Plots Height vs Time² with a linear regression line."""
     try:
         if not os.path.exists(filename):
-            print(f" File '{filename}' not found for plotting.")
+            print(f"File '{filename}' not found for plotting.")
             return
 
         df = pd.read_csv(filename)
         if df.empty:
-            print(f"️ No data found in '{filename}'.")
+            print(f"No data found in '{filename}'.")
             return
 
         x = df["Time^2_s2"]
@@ -257,11 +256,11 @@ def main():
             case "2":
                 single_student_experiment(g)
             case "3":
-                print(" Feature to be implemented...")
+                print("\nFeature to be implemented...\n")
             case "4":
                 multiple_students_experiment(g)
             case "5":
-                print(" Feature to be implemented...")
+                print("\nFeature to be implemented...\n")
             case "6":
                 m = get_float_input("Enter new m value (kg): ")
                 k = get_float_input("Enter new k value (Ns/m): ")
