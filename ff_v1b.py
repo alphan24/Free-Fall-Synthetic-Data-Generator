@@ -124,7 +124,7 @@ def generate_data_no_friction(g, filename, h_initial, h_final,
                 for _ in range(n_trials):
                     t_theoretical = math.sqrt(2 * max(h_with_noise, 0) / g)
                     t_measured = t_theoretical + np.random.normal(0, t_noise_level)
-                    writer.writerow([h_with_noise, t_measured, t_measured ** 2])
+                    writer.writerow([h_current, t_measured, t_measured ** 2])
 
                 h_current += h_increment
 
